@@ -1,9 +1,8 @@
-import { IsNotEmpty, IsNumber, IsString, IsArray, Min, IsInt, ArrayNotEmpty, ValidateNested } from 'class-validator';
+import { Category } from "@prisma/client";
+import { IsArray, IsDecimal, IsInt, IsNotEmpty, IsNumber, IsString, Min } from "class-validator";
 
 export class CreateProductDto {
-    @IsNotEmpty()
-    @IsInt()
-    id: number;
+
 
     @IsNotEmpty()
     @IsString()
@@ -14,7 +13,7 @@ export class CreateProductDto {
     description: string;
 
     @IsNotEmpty()
-    @IsInt()
+    @Min(0)
     cost: number;
 
     @IsNotEmpty()
@@ -22,17 +21,18 @@ export class CreateProductDto {
     currency: string;
 
     @IsNotEmpty()
-    @IsInt()
     @Min(0)
+    @IsInt()
     stockCount: number;
 
     @IsNotEmpty()
-    @IsString()
-    category: string;
-
     @IsArray()
-    @ArrayNotEmpty()
     @IsString({ each: true })
-    images: string[];
+    image: string[];
+
+    @IsNumber()
+    categoryId: number;
+
+    category: Category
 
 }

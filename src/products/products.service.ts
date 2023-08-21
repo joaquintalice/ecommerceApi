@@ -1,86 +1,49 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { PrismaService } from './prisma.service';
+import { PrismaService } from 'src/database/prisma.service';
+import { Product } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
 
-  private readonly logger = new Logger('ProductsService');
+  constructor(private prismaService: PrismaService) { }
 
-  constructor(private prisma: PrismaService) { }
+  async create(createProductDto: CreateProductDto): Promise<Product> {
+    const { name, description, cost, currency, image, categoryId, stockCount } = createProductDto;
 
-  async create(createProductDto: CreateProductDto) {
+    const newProduct = await this.prismaService.product.create({
+      data: {
+        name,
+        description,
+        cost,
+        currency,
+        image,
+        category: { connect: { id: categoryId } },
+        stockCount
+      },
+      include: {
+        relatedProducts: true,
+        category: true
+      }
+    });
 
-    try {
-      const { images, ...productData } = createProductDto;
-
-      const createdProduct = await this.prisma.products.create({
-        data: {
-          ...productData,
-          images: { set: images },
-        },
-      });
-
-      return createdProduct;
-    } catch (error) {
-      this.handleDBExceptions(error);
-    }
-
+    return newProduct;
   }
-
 
   async findAll() {
-    const products = await this.prisma.products.findMany();
-    return products;
+    return await this.prismaService.product.findMany({ include: { category: true } });
   }
 
-  async findOne(id: number) {
-    const product = await this.prisma.products.findFirst({ where: { id: id } });
-    if (!product) throw new BadRequestException(`test`);
-    return product;
+  findOne(id: number) {
+    return `This action returns a #${id} product`;
   }
 
-  async update(id: number, updateProductDto: UpdateProductDto) {
-    const { images, ...productData } = updateProductDto;
-
-    const updatedProduct = await this.prisma.products.update({
-      where: { id },
-      data: {
-        ...productData,
-        images: { set: images },
-      },
-    });
-
-    return updatedProduct;
+  update(id: number, updateProductDto: UpdateProductDto) {
+    return `This action updates a #${id} product`;
   }
 
-  async remove(id: number) {
-    const product = await this.prisma.products.findUnique({
-      where: { id },
-    });
-
-    if (!product) {
-      throw new NotFoundException(`Product with id ${id} not found`);
-    }
-
-    await this.prisma.products.delete({
-      where: { id },
-    });
-
-    return product;
+  remove(id: number) {
+    return `This action removes a #${id} product`;
   }
-
-
-
-  private handleDBExceptions(error: any) {
-
-    if (error.code === 'P2002') throw new BadRequestException(error.detail);
-
-    this.logger.error(error);
-
-    console.log(error);
-    throw new InternalServerErrorException('Unexpected error, check server logs');
-  }
-
 }
